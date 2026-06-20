@@ -19,15 +19,28 @@
 .PARAMETER DryRun
     実際には変更せず、何が行われるかを表示する
 
+.PARAMETER InitProject
+    プロジェクト用 .claude/CLAUDE.md を生成する
+
+.PARAMETER Template
+    InitProject で使うテンプレート名 (base / python / typescript)
+
+.PARAMETER ProjectPath
+    InitProject の対象ディレクトリ（省略時はカレントディレクトリ）
+
 .EXAMPLE
     .\setup.ps1 -DryRun
     .\setup.ps1 -Force
+    .\setup.ps1 -InitProject -Template python -ProjectPath C:\work\myapp
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [switch]$Force,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$InitProject,
+    [string]$Template = 'base',
+    [string]$ProjectPath = (Get-Location).Path
 )
 
 $ErrorActionPreference = 'Stop'
@@ -185,46 +198,223 @@ function Build-AgentsMd {
     Write-Status 'Generated' $dest 'Green'
 }
 
-# --- メイン ---
+function Build-GeminiMd {
+    param([string]$RulesDir, [string]$GeminiDir)
 
-Write-Host ''
-Write-Host 'dotfiles セットアップ開始' -ForegroundColor White
-Write-Host "DotfilesRoot: $DotfilesRoot"
-if ($DryRun) { Write-Host '[DryRun モード - 変更は行いません]' -ForegroundColor Yellow }
-Write-Host ''
+    $header = @"
+# Gemini / Antigravity Rules
 
-Write-Host '  AGENTS.md 生成中...' -ForegroundColor DarkGray
-Build-AgentsMd -RulesDir (Join-Path $DotfilesRoot 'rules') -CodexDir (Join-Path $DotfilesRoot 'codex')
+<!-- このファイルは setup.ps1 により自動生成されます。直接編集しないこと。
+     編集は rules/ 以下の各ファイルへ。 -->
 
-$Links = @(
-    @{
-        Target = Join-Path $UserProfile '.claude\CLAUDE.md'
-        Source = Join-Path $DotfilesRoot 'claude\CLAUDE.md'
-        Note   = 'Claude Code グローバル指示'
-    },
-    @{
-        Target = Join-Path $UserProfile '.claude\settings.json'
-        Source = Join-Path $DotfilesRoot 'claude\settings.json'
-        Note   = 'Claude Code 設定'
-    },
-    @{
-        Target = Join-Path $UserProfile '.codex\AGENTS.md'
-        Source = Join-Path $DotfilesRoot 'codex\AGENTS.md'
-        Note   = 'OpenAI Codex グローバル指示'
+"@
+
+    $subFiles = @(
+        'tone\tundere-jp.md',
+        'coding.md',
+        'git.md',
+        'security.md',
+        'workflow.md'
+    )
+
+    $body = $subFiles | ForEach-Object {
+        $path = Join-Path $RulesDir $_
+        if (Test-Path $path) {
+            Get-Content $path -Raw
+        } else {
+            Write-Status 'WARN' "Missing: $path" 'Yellow'
+        }
     }
-)
 
-foreach ($Link in $Links) {
-    Write-Host "  $($Link.Note)" -ForegroundColor DarkGray
-    New-SmartLink -Target $Link.Target -Source $Link.Source
+    $trimmedBody = ($body | ForEach-Object { $_.Trim() }) -join "`n`n---`n`n"
+    $content = $header.TrimEnd() + "`n`n" + $trimmedBody + "`n"
+    $dest = Join-Path $GeminiDir 'GEMINI.md'
+
+    if ($DryRun) {
+        Write-Status 'DryRun' "Would regenerate: $dest" 'Cyan'
+        return
+    }
+
+    if (-not (Test-Path $GeminiDir)) {
+        New-Item -ItemType Directory -Path $GeminiDir -Force | Out-Null
+    }
+
+    Set-Content -Path $dest -Value $content -Encoding UTF8
+    Write-Status 'Generated' $dest 'Green'
 }
 
-Write-Host '  ~/.claude/rules ジャンクション' -ForegroundColor DarkGray
-New-SmartJunction `
-    -Target (Join-Path $UserProfile '.claude\rules') `
-    -Source (Join-Path $DotfilesRoot 'rules')
+function Start-ProjectInit {
+    param([string]$TemplateType, [string]$Path)
 
-Write-Host ''
-Write-Host 'セットアップ完了！' -ForegroundColor Green
-Write-Host 'Claude Code を再起動して変更を反映してください。'
-Write-Host ''
+    $TemplateFile = Join-Path $DotfilesRoot "templates\project\$TemplateType.md"
+    $DestDir      = Join-Path $Path '.claude'
+    $DestMd       = Join-Path $DestDir 'CLAUDE.md'
+    $DestGi       = Join-Path $Path '.gitignore'
+    $Snippet      = Join-Path $DotfilesRoot 'templates\project\gitignore-snippet.txt'
+
+    if (-not (Test-Path $TemplateFile)) {
+        Write-Status 'ERROR' "テンプレートが見つかりません: $TemplateType ($TemplateFile)" 'Red'
+        Write-Host 'Available: base, python, typescript'
+        exit 1
+    }
+
+    if ($DryRun) {
+        Write-Status 'DryRun' "Would create: $DestDir" 'Cyan'
+    } else {
+        New-Item -ItemType Directory -Path $DestDir -Force | Out-Null
+    }
+
+    if (Test-Path $DestMd) {
+        Write-Status 'Skip' "Already exists: $DestMd" 'Gray'
+    } elseif ($DryRun) {
+        Write-Status 'DryRun' "Would create: $DestMd" 'Cyan'
+    } else {
+        Copy-Item $TemplateFile $DestMd
+        Write-Status 'Created' $DestMd 'Green'
+    }
+
+    $hasEntry = (Test-Path $DestGi) -and (Select-String -Path $DestGi -Pattern 'settings\.local\.json' -Quiet)
+    if ($hasEntry) {
+        Write-Status 'Skip' '.gitignore already has Claude entries' 'Gray'
+    } elseif ($DryRun) {
+        Write-Status 'DryRun' "Would append Claude entries to: $DestGi" 'Cyan'
+    } else {
+        if (Test-Path $DestGi) { Add-Content -Path $DestGi -Value '' }
+        Get-Content $Snippet | Add-Content -Path $DestGi
+        Write-Status 'Updated' $DestGi 'Green'
+    }
+
+    # Antigravity .agents/rules/
+    $AgentsDir = Join-Path $Path '.agents\rules'
+    if ($DryRun) {
+        Write-Status 'DryRun' "Would create: $AgentsDir" 'Cyan'
+    } else {
+        New-Item -ItemType Directory -Path $AgentsDir -Force | Out-Null
+    }
+
+    $AgentsProject = Join-Path $AgentsDir 'project.md'
+    if (Test-Path $AgentsProject) {
+        Write-Status 'Skip' "Already exists: $AgentsProject" 'Gray'
+    } elseif ($DryRun) {
+        Write-Status 'DryRun' "Would create: $AgentsProject" 'Cyan'
+    } else {
+        Copy-Item (Join-Path $DotfilesRoot 'templates\project\base.md') $AgentsProject
+        Write-Status 'Created' $AgentsProject 'Green'
+    }
+
+    $ToolingSrc = switch ($TemplateType) {
+        'python'     { Join-Path $DotfilesRoot 'rules\tooling\uv.md' }
+        'typescript' { Join-Path $DotfilesRoot 'rules\tooling\bun.md' }
+        default      { $null }
+    }
+    if ($ToolingSrc) {
+        $AgentsTooling = Join-Path $AgentsDir 'tooling.md'
+        if (Test-Path $AgentsTooling) {
+            Write-Status 'Skip' "Already exists: $AgentsTooling" 'Gray'
+        } elseif ($DryRun) {
+            Write-Status 'DryRun' "Would create: $AgentsTooling" 'Cyan'
+        } else {
+            Copy-Item $ToolingSrc $AgentsTooling
+            Write-Status 'Created' $AgentsTooling 'Green'
+        }
+    }
+
+    Write-Host ''
+    Write-Host "プロジェクト設定を作成しました: $DestMd" -ForegroundColor Green
+    Write-Host '[PROJECT_NAME] などのプレースホルダーを書き換えてください。'
+    Write-Host ''
+}
+
+function Set-SecretScanHook {
+    # gitleaks を winget で導入し、global core.hooksPath を dotfiles/git-hooks に向ける。
+    # これで全リポジトリの commit 時に staged の秘密混入をブロックする。
+    $hooksDir = (Join-Path $DotfilesRoot 'git-hooks') -replace '\\', '/'
+
+    $hasGitleaks = [bool](Get-Command gitleaks -ErrorAction SilentlyContinue)
+    if (-not $hasGitleaks) {
+        $wingetExe = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages\Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe\gitleaks.exe'
+        $hasGitleaks = Test-Path $wingetExe
+    }
+
+    if (-not $hasGitleaks) {
+        if ($DryRun) {
+            Write-Status 'DryRun' 'Would: winget install Gitleaks.Gitleaks' 'Cyan'
+        } else {
+            Write-Status 'Install' 'gitleaks を winget で導入中...' 'DarkGray'
+            winget install --id Gitleaks.Gitleaks --source winget --accept-package-agreements --accept-source-agreements --disable-interactivity | Out-Null
+            Write-Status 'Install' 'gitleaks 導入完了' 'Green'
+        }
+    } else {
+        Write-Status 'Skip' 'gitleaks はインストール済み' 'Gray'
+    }
+
+    if ($DryRun) {
+        Write-Status 'DryRun' "Would set: git config --global core.hooksPath $hooksDir" 'Cyan'
+    } else {
+        git config --global core.hooksPath $hooksDir
+        Write-Status 'GitHook' "core.hooksPath -> $hooksDir" 'Green'
+    }
+}
+
+# --- メイン ---
+
+if ($InitProject) {
+    Write-Host ''
+    Write-Host "init-project: template=$Template path=$ProjectPath"
+    if ($DryRun) { Write-Host '[DryRun モード]' -ForegroundColor Yellow }
+    Write-Host ''
+    Start-ProjectInit -TemplateType $Template -Path $ProjectPath
+} else {
+    Write-Host ''
+    Write-Host 'dotfiles セットアップ開始' -ForegroundColor White
+    Write-Host "DotfilesRoot: $DotfilesRoot"
+    if ($DryRun) { Write-Host '[DryRun モード - 変更は行いません]' -ForegroundColor Yellow }
+    Write-Host ''
+
+    Write-Host '  AGENTS.md 生成中...' -ForegroundColor DarkGray
+    Build-AgentsMd -RulesDir (Join-Path $DotfilesRoot 'rules') -CodexDir (Join-Path $DotfilesRoot 'codex')
+
+    Write-Host '  GEMINI.md 生成中...' -ForegroundColor DarkGray
+    Build-GeminiMd -RulesDir (Join-Path $DotfilesRoot 'rules') -GeminiDir (Join-Path $DotfilesRoot 'gemini')
+
+    $Links = @(
+        @{
+            Target = Join-Path $UserProfile '.claude\CLAUDE.md'
+            Source = Join-Path $DotfilesRoot 'claude\CLAUDE.md'
+            Note   = 'Claude Code グローバル指示'
+        },
+        @{
+            Target = Join-Path $UserProfile '.claude\settings.json'
+            Source = Join-Path $DotfilesRoot 'claude\settings.json'
+            Note   = 'Claude Code 設定'
+        },
+        @{
+            Target = Join-Path $UserProfile '.codex\AGENTS.md'
+            Source = Join-Path $DotfilesRoot 'codex\AGENTS.md'
+            Note   = 'OpenAI Codex グローバル指示'
+        },
+        @{
+            Target = Join-Path $UserProfile '.gemini\GEMINI.md'
+            Source = Join-Path $DotfilesRoot 'gemini\GEMINI.md'
+            Note   = 'Antigravity グローバルルール'
+        }
+    )
+
+    foreach ($Link in $Links) {
+        Write-Host "  $($Link.Note)" -ForegroundColor DarkGray
+        New-SmartLink -Target $Link.Target -Source $Link.Source
+    }
+
+    Write-Host '  ~/.claude/rules ジャンクション' -ForegroundColor DarkGray
+    New-SmartJunction `
+        -Target (Join-Path $UserProfile '.claude\rules') `
+        -Source (Join-Path $DotfilesRoot 'rules')
+
+    Write-Host '  gitleaks pre-commit hook (秘密スキャン)' -ForegroundColor DarkGray
+    Set-SecretScanHook
+
+    Write-Host ''
+    Write-Host 'セットアップ完了！' -ForegroundColor Green
+    Write-Host 'Claude Code を再起動して変更を反映してください。'
+    Write-Host ''
+}

@@ -1,0 +1,25 @@
+#!/bin/sh
+# gitleaks pre-commit hook -- dotfiles管理 (case A: global core.hooksPath)
+# staged な変更に秘密(APIキー・トークン等)が混入していないかスキャンし、
+# 検知時は commit を中止する。全リポジトリに core.hooksPath 経由で適用される。
+
+# gitleaks を解決: winget の実体exe優先 (App実行エイリアスはgit-bashで不発のため)、無ければPATH
+WINGET_GL="$LOCALAPPDATA/Microsoft/WinGet/Packages/Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe/gitleaks.exe"
+if [ -x "$WINGET_GL" ]; then
+	GITLEAKS="$WINGET_GL"
+elif command -v gitleaks >/dev/null 2>&1; then
+	GITLEAKS=gitleaks
+else
+	echo "gitleaks not found; secret scan skipped (winget install Gitleaks.Gitleaks)" >&2
+	exit 0
+fi
+
+"$GITLEAKS" git --staged --no-banner --redact
+status=$?
+if [ "$status" -ne 0 ]; then
+	echo "" >&2
+	echo "[gitleaks] 秘密が検知されたため commit を中止しました。" >&2
+	echo "  - 本物の秘密なら: コードから除去し、環境変数 / Key Vault へ移す" >&2
+	echo "  - 誤検知なら: リポジトリ直下の .gitleaksignore に Finding ID を追記する" >&2
+fi
+exit "$status"
