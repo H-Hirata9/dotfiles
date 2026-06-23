@@ -428,6 +428,11 @@ if ($InitProject) {
         New-SmartJunction -Target (Join-Path $SkillsDstDir $s) -Source $src
     }
 
+    Write-Host '  ~/.claude/hooks ジャンクション' -ForegroundColor DarkGray
+    New-SmartJunction `
+        -Target (Join-Path $UserProfile '.claude\hooks') `
+        -Source (Join-Path $DotfilesRoot 'claude\hooks')
+
     Write-Host '  gitleaks pre-commit hook (秘密スキャン)' -ForegroundColor DarkGray
     Set-SecretScanHook
 

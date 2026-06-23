@@ -10,3 +10,7 @@ claude/skills/**/__pycache__/
 claude/skills/**/*.pyc
 claude/skills/**/.pytest_cache/
 claude/skills/**/*.log
+
+# Claude hooks のローカル状態（ログは版管理しない）
+claude/hooks/*.log
+claude/hooks/**/__pycache__/
