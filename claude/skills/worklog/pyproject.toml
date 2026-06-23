@@ -1,0 +1,9 @@
+[project]
+name = "worklog"
+version = "0.1.0"
+description = "ADA作業ログをVaultに追記しGoogle Driveにミラーする"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8.0"]

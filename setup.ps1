@@ -410,6 +410,24 @@ if ($InitProject) {
         -Target (Join-Path $UserProfile '.claude\rules') `
         -Source (Join-Path $DotfilesRoot 'rules')
 
+    # 自作 Claude skills を per-skill junction（vendor skill には触らない＝物理分離）
+    $CustomSkills = @(
+        'evaluator', 'session-search', 'agy-model', 'gws', 'worklog',
+        'obsidian-vault', 'youtube-eval', 'weekly-report', 'pdf-to-wiki',
+        'add-knowledge-source', 'chusho-policy', 'tts', 'python-tool-dev'
+    )
+    $SkillsSrcDir = Join-Path $DotfilesRoot 'claude\skills'
+    $SkillsDstDir = Join-Path $UserProfile '.claude\skills'
+    Write-Host '  自作 Claude skills ジャンクション' -ForegroundColor DarkGray
+    foreach ($s in $CustomSkills) {
+        $src = Join-Path $SkillsSrcDir $s
+        if (-not (Test-Path $src -PathType Container)) {
+            Write-Status 'Skip' "skill source not in dotfiles yet: $s" 'Gray'
+            continue
+        }
+        New-SmartJunction -Target (Join-Path $SkillsDstDir $s) -Source $src
+    }
+
     Write-Host '  gitleaks pre-commit hook (秘密スキャン)' -ForegroundColor DarkGray
     Set-SecretScanHook
 

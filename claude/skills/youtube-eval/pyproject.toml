@@ -1,0 +1,20 @@
+[project]
+name = "youtube-eval"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "youtube-transcript-api>=1.2.4",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.0",
+    "ty>=0.0.1a0",
+    "pytest>=8.0.0",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
