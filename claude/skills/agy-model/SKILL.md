@@ -17,16 +17,16 @@ metadata:
 
 ## なぜ settings.json 方式か
 agy の MCP ブリッジは headless `agy -p` を使う。`-p` に `--model` を渡すと**ハングする**（1.0.9で実証）。
-そのため使用モデルは `~/.gemini/antigravity-cli/settings.json` の `"model"` フィールドで制御する。
+そのため使用モデルは `$HOME/.gemini/antigravity-cli/settings.json` の `"model"` フィールドで制御する。
 このスクリプトがその欄を安全に書き換える（書換前に .bak を作成、tmp→replace でアトミック）。
 
 ## 使い方
 ```
-python ~/.claude/skills/agy-model/set_model.py status
-python ~/.claude/skills/agy-model/set_model.py list
-python ~/.claude/skills/agy-model/set_model.py pro
-python ~/.claude/skills/agy-model/set_model.py flash
-python ~/.claude/skills/agy-model/set_model.py set "Gemini 4 Pro (High)"
+python $HOME/.claude/skills/agy-model/set_model.py status
+python $HOME/.claude/skills/agy-model/set_model.py list
+python $HOME/.claude/skills/agy-model/set_model.py pro
+python $HOME/.claude/skills/agy-model/set_model.py flash
+python $HOME/.claude/skills/agy-model/set_model.py set "Gemini 4 Pro (High)"
 ```
 依存は標準ライブラリのみ（uv 不要、`python` で直接実行可）。
 

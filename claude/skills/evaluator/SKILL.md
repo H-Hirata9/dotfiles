@@ -10,7 +10,7 @@ metadata:
 
 `Agentic Design Patterns`(A.Gulli) の ⑲Evaluation & Monitoring を埋めるツール。
 ADAの出力品質を月次で測り、繰り返しミスを検知して学習(#23/⑨)へ流す。
-設計の正本: ada-board #21 / 計画 `~/.claude/plans/2026-06-23_ada-board-21_quality-eval-loop.md`
+設計の正本: ada-board #21 / 計画 `$HOME/.claude/plans/2026-06-23_ada-board-21_quality-eval-loop.md`
 
 ## いつ使うか
 - 月次の棚卸し時、または主人が「品質評価して」と言ったとき
@@ -19,10 +19,10 @@ ADAの出力品質を月次で測り、繰り返しミスを検知して学習(#
 ## 使い方
 ```
 # プレビュー（書き込みなし。stdout にMDレポート）
-uv run --project ~/.claude/skills/evaluator python ~/.claude/skills/evaluator/scripts/eval_collect.py --month 2026-06 --no-gh
+uv run --project $HOME/.claude/skills/evaluator python $HOME/.claude/skills/evaluator/scripts/eval_collect.py --month 2026-06 --no-gh
 
 # 本番（cch-bot-knowledge/eval/ に JSON+MD 出力。gh で reopened issue も集計）
-uv run --project ~/.claude/skills/evaluator python ~/.claude/skills/evaluator/scripts/eval_collect.py --month 2026-06 --write
+uv run --project $HOME/.claude/skills/evaluator python $HOME/.claude/skills/evaluator/scripts/eval_collect.py --month 2026-06 --write
 ```
 - `--month YYYY-MM`: 対象月（既定=今月）
 - `--write`: `cch-bot-knowledge/eval/eval-YYYY-MM.{json,md}` に出力
@@ -54,5 +54,5 @@ uv run --project ~/.claude/skills/evaluator python ~/.claude/skills/evaluator/sc
 
 ## テスト
 ```
-uv run --project ~/.claude/skills/evaluator --dev pytest ~/.claude/skills/evaluator/tests/ -q
+uv run --project $HOME/.claude/skills/evaluator --dev pytest $HOME/.claude/skills/evaluator/tests/ -q
 ```

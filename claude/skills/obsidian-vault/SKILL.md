@@ -1,11 +1,11 @@
 ---
 name: obsidian-vault
-description: Obsidian Vault（~/Vault/）の読み書き権限ルールと、wiki（LLMwikiスタイル）のIngest/Lint/Query手順。Vault配下のファイルを読み書きするとき、特に「wikiに追加して」「raw/の〇〇をIngestして」「wikiをLintして」「研究結果をVaultに保存」等の指示で着手前に読む。
+description: Obsidian Vault（$HOME/Vault/）の読み書き権限ルールと、wiki（LLMwikiスタイル）のIngest/Lint/Query手順。Vault配下のファイルを読み書きするとき、特に「wikiに追加して」「raw/の〇〇をIngestして」「wikiをLintして」「研究結果をVaultに保存」等の指示で着手前に読む。
 ---
 
 # obsidian-vault — Vault 管理ルール
 
-Obsidian は **主人が読む成果物の置き場**。ADA の内部記憶（`~/.claude/ada/`）とは役割が違う。
+Obsidian は **主人が読む成果物の置き場**。ADA の内部記憶（`$HOME/.claude/ada/`）とは役割が違う。
 
 ## ディレクトリ別の ADA 権限
 | ディレクトリ | 読み | 書き |
@@ -21,7 +21,7 @@ Obsidian は **主人が読む成果物の置き場**。ADA の内部記憶（`~
 ## research/ への出力ルール
 - ファイル名: `YYYY-MM-DD_<タイトル>.md` / YAML frontmatter にタグ必須
 - 既存ノートの**上書き禁止**（新規作成のみ）
-- ADA 自身のメモ・サマリーは**ここに書かない**（`~/.claude/ada/` へ）
+- ADA 自身のメモ・サマリーは**ここに書かない**（`$HOME/.claude/ada/` へ）
 
 ## wiki/ 管理（LLMwiki スタイル）
 ルールは `Vault/wiki/SCHEMA.md` に定義。**作業前に必ず Read**。専門の wiki-worker サブエージェントに委譲してもよい。

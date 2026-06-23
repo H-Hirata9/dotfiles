@@ -15,15 +15,15 @@ metadata:
 
 ## 使い方
 ```
-python ~/.claude/skills/session-search/session_search.py search "<クエリ>" [--limit 8] [--since 2026-06-01]
-python ~/.claude/skills/session-search/session_search.py status
-python ~/.claude/skills/session-search/session_search.py index   # 通常は不要(検索時に自動増分)
+python $HOME/.claude/skills/session-search/session_search.py search "<クエリ>" [--limit 8] [--since 2026-06-01]
+python $HOME/.claude/skills/session-search/session_search.py status
+python $HOME/.claude/skills/session-search/session_search.py index   # 通常は不要(検索時に自動増分)
 ```
 依存は標準ライブラリのみ（uv 不要、`python` で直接実行可）。
 
 ## 仕組み（要点）
-- 索引 DB: `~/.claude/ada/sessions.db`（FTS5 + **trigram** トークナイザ＝日本語/CJK 対応に必須）
-- データ源: `~/.claude/projects/<slug>/<conv-id>.jsonl`。user/assistant の本文・思考・tool 呼び出しを平文化して索引
+- 索引 DB: `$HOME/.claude/ada/sessions.db`（FTS5 + **trigram** トークナイザ＝日本語/CJK 対応に必須）
+- データ源: `$HOME/.claude/projects/<slug>/<conv-id>.jsonl`。user/assistant の本文・思考・tool 呼び出しを平文化して索引
 - **増分**: `ingested_files.last_byte_offset` を持ち、追記分だけ seek。検索時に自動で増分同期してから検索（on-demand）
 - **検索(DISCOVERY)**: query→FTS5 MATCH→bm25 順→各ヒットに ±5 メッセージ窓＋セッション先頭/末尾3件(bookends)
 - 検索のクエリ展開（同義語・日英の揺れ）は ADA 側で行う＝「バグ OR 修正 OR エラー」のように複数語を投げる。semantic 検索は不採用（#13 参照）

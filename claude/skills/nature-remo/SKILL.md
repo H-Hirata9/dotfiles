@@ -8,12 +8,12 @@ metadata:
 
 # nature-remo — エアコン操作
 
-Nature Remo 経由で自宅のエアコンを操作する。実体は `~/projects/life/nature_remo/ac.py`。
+Nature Remo 経由で自宅のエアコンを操作する。実体は `$HOME/projects/life/nature_remo/ac.py`。
 秘密(トークン)は dotenvx で暗号化管理（[[dotenvx]] スキル）。
 
 ## 使い方（nature_remo ディレクトリで dotenvx run 経由）
 ```
-cd ~/projects/life/nature_remo
+cd $HOME/projects/life/nature_remo
 dotenvx run -- uv run python ac.py status
 dotenvx run -- uv run python ac.py on [--temp 26] [--mode cool]
 dotenvx run -- uv run python ac.py off

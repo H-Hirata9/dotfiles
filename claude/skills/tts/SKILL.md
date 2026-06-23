@@ -8,7 +8,7 @@ when_to_use: |
   - 複数行テキストをバッチで音声生成したいとき
   - ボイスやイントネーションを確認したいとき
 disable-model-invocation: true
-allowed-tools: Bash(~/projects/dev/tts_app/.venv/Scripts/tts.exe *)
+allowed-tools: Bash($HOME/projects/dev/tts_app/.venv/Scripts/tts.exe *)
 argument-hint: "[テキスト] または [--language ja|en] [--voice VOICE_ID] [テキスト]"
 ---
 
@@ -18,10 +18,10 @@ Azure AI Speech CLI (`tts`) を使ってテキストを音声合成する。
 
 ## 実行方法
 
-`~/projects/dev/tts_app/.venv/Scripts/tts.exe` を直接使う。
+`$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe` を直接使う。
 
 ```bash
-TTS="~/projects/dev/tts_app/.venv/Scripts/tts.exe"
+TTS="$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe"
 ```
 
 ## 基本パターン
@@ -30,27 +30,27 @@ TTS="~/projects/dev/tts_app/.venv/Scripts/tts.exe"
 
 ```bash
 # 日本語（デフォルトボイス: Nanami）
-~/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja "読み上げたいテキスト"
+$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja "読み上げたいテキスト"
 
 # 英語（デフォルトボイス: Jenny）
-~/projects/dev/tts_app/.venv/Scripts/tts.exe --language en "Text to be read aloud"
+$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe --language en "Text to be read aloud"
 ```
 
 ### WAV ファイルに保存
 
 ```bash
-~/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --output output/result.wav "読み上げたいテキスト"
+$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --output output/result.wav "読み上げたいテキスト"
 ```
 
 ### ボイスを指定
 
 ```bash
 # 高品質 HD ボイス（推奨）
-~/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --voice "ja-JP-Nanami:DragonHDLatestNeural" "テキスト"
-~/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --voice "ja-JP-Masaru:DragonHDLatestNeural" "テキスト"
+$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --voice "ja-JP-Nanami:DragonHDLatestNeural" "テキスト"
+$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --voice "ja-JP-Masaru:DragonHDLatestNeural" "テキスト"
 
 # 標準ボイス
-~/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --voice "ja-JP-KeitaNeural" "テキスト"
+$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --voice "ja-JP-KeitaNeural" "テキスト"
 ```
 
 ### バッチ生成（テキストファイルから）
@@ -58,7 +58,7 @@ TTS="~/projects/dev/tts_app/.venv/Scripts/tts.exe"
 ```bash
 # script.txt の各行を個別 WAV に変換
 # 出力: output/batch/01.wav, 02.wav, ...
-~/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --input-file script.txt --output output/batch/
+$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe --language ja --input-file script.txt --output output/batch/
 ```
 
 `--input-file` の注意事項：
@@ -106,15 +106,15 @@ TTS="~/projects/dev/tts_app/.venv/Scripts/tts.exe"
 | スクリプト全行を一括生成 | `...tts.exe --language ja --input-file script.txt --output output/` |
 | 使えるボイスを確認したい | `...tts.exe --language ja --list-voices` |
 
-※ `...tts.exe` は `~/projects/dev/tts_app/.venv/Scripts/tts.exe` の略
+※ `...tts.exe` は `$HOME/projects/dev/tts_app/.venv/Scripts/tts.exe` の略
 
 ## エラー対処
 
 | エラー | 原因 | 対処 |
 |--------|------|------|
-| `AZURE_SPEECH_KEY not found` | `.env` 未設定 | `~/projects/dev/tts_app/.env` を確認 |
+| `AZURE_SPEECH_KEY not found` | `.env` 未設定 | `$HOME/projects/dev/tts_app/.env` を確認 |
 | `Voice not available` | リージョン非対応 | DragonHD は `AZURE_SPEECH_REGION=eastus` が必要 |
-| `.venv が存在しない` | 環境未構築 | `cd ~/projects/dev/tts_app` で `uv pip install --only-binary :all: -e .` を実行 |
+| `.venv が存在しない` | 環境未構築 | `cd $HOME/projects/dev/tts_app` で `uv pip install --only-binary :all: -e .` を実行 |
 
 ## 他プロジェクトから参照する場合
 
@@ -122,5 +122,5 @@ TTS="~/projects/dev/tts_app/.venv/Scripts/tts.exe"
 
 ```markdown
 ## Tools
-音声合成が必要な場合は `~/.claude/skills/tts/SKILL.md` を読むこと。
+音声合成が必要な場合は `$HOME/.claude/skills/tts/SKILL.md` を読むこと。
 ```

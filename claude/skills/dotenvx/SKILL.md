@@ -9,7 +9,7 @@ metadata:
 # dotenvx — プロジェクト秘密管理＆ポータビリティ
 
 ADAの秘密管理の標準は **dotenvx**。.env を暗号化してコミット可能にし、新端末でも復元できる状態にする。
-背景・計画: `~/.claude/plans/2026-06-23_dotenvx-migration.md`。#24ポータビリティと連動。
+背景・計画: `$HOME/.claude/plans/2026-06-23_dotenvx-migration.md`。#24ポータビリティと連動。
 
 ## 運用モデル（確定方針）
 - **暗号化 .env はコミットする**（公開鍵＋`encrypted:`値。構成管理＆ポータビリティ）
@@ -53,7 +53,7 @@ gh repo create <name> --private --source . --push
 移行済みのツールは必ず `cd <proj> && dotenvx run -- <従来コマンド>` で呼ぶ。CLAUDE.md等のコマンド例も同形に更新。
 
 ## 対象外（触らない）
-- ADA通信系 `~/.claude/channels/telegram/.env`（ADAの生命線。暗号化するとTelegram通知が止まる）
+- ADA通信系 `$HOME/.claude/channels/telegram/.env`（ADAの生命線。暗号化するとTelegram通知が止まる）
 
 ## ロールバック
 `cp .env.plain.bak .env && rm .env.keys` ＋ スクリプトの load_dotenv を戻す → 平文運用に復帰。
@@ -61,10 +61,10 @@ gh repo create <name> --private --source . --push
 ## verify（doctor スクリプト・読み取り専用）
 移行後の健全性チェック（秘密値は一切出力しない）:
 ```
-uv run --project ~/.claude/skills/dotenvx python ~/.claude/skills/dotenvx/scripts/dotenvx_doctor.py <project_path>
+uv run --project $HOME/.claude/skills/dotenvx python $HOME/.claude/skills/dotenvx/scripts/dotenvx_doctor.py <project_path>
 ```
 .env暗号化／平文値の残存／.env.keys存在＆gitignore／load_dotenv撤去 を一括チェックし PASS/問題数 を表示。
-各プロジェクト移行後に実行して抜け漏れを防ぐ。テスト: `uv run --project ~/.claude/skills/dotenvx --dev pytest ~/.claude/skills/dotenvx/tests/ -q`
+各プロジェクト移行後に実行して抜け漏れを防ぐ。テスト: `uv run --project $HOME/.claude/skills/dotenvx --dev pytest $HOME/.claude/skills/dotenvx/tests/ -q`
 
 ## 進捗（移行済み）
 - nature_remo: 移行済み（2026-06-23 pilot）
