@@ -419,7 +419,7 @@ if ($InitProject) {
     $CustomSkills = @(
         'evaluator', 'session-search', 'agy-model', 'gws', 'worklog',
         'obsidian-vault', 'youtube-eval', 'weekly-report', 'pdf-to-wiki',
-        'add-knowledge-source', 'chusho-policy', 'tts', 'python-tool-dev'
+        'add-knowledge-source', 'chusho-policy', 'tts', 'python-tool-dev', 'dotenvx'
     )
     $SkillsSrcDir = Join-Path $DotfilesRoot 'claude\skills'
     $SkillsDstDir = Join-Path $UserProfile '.claude\skills'
