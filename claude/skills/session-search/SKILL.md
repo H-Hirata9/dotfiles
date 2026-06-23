@@ -15,9 +15,9 @@ metadata:
 
 ## 使い方
 ```
-python C:\Users\nov26\.claude\skills\session-search\session_search.py search "<クエリ>" [--limit 8] [--since 2026-06-01]
-python C:\Users\nov26\.claude\skills\session-search\session_search.py status
-python C:\Users\nov26\.claude\skills\session-search\session_search.py index   # 通常は不要(検索時に自動増分)
+python ~/.claude/skills/session-search/session_search.py search "<クエリ>" [--limit 8] [--since 2026-06-01]
+python ~/.claude/skills/session-search/session_search.py status
+python ~/.claude/skills/session-search/session_search.py index   # 通常は不要(検索時に自動増分)
 ```
 依存は標準ライブラリのみ（uv 不要、`python` で直接実行可）。
 

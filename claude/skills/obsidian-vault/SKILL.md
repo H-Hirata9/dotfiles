@@ -1,6 +1,6 @@
 ---
 name: obsidian-vault
-description: Obsidian Vault（C:\Users\nov26\Vault\）の読み書き権限ルールと、wiki（LLMwikiスタイル）のIngest/Lint/Query手順。Vault配下のファイルを読み書きするとき、特に「wikiに追加して」「raw/の〇〇をIngestして」「wikiをLintして」「研究結果をVaultに保存」等の指示で着手前に読む。
+description: Obsidian Vault（~/Vault/）の読み書き権限ルールと、wiki（LLMwikiスタイル）のIngest/Lint/Query手順。Vault配下のファイルを読み書きするとき、特に「wikiに追加して」「raw/の〇〇をIngestして」「wikiをLintして」「研究結果をVaultに保存」等の指示で着手前に読む。
 ---
 
 # obsidian-vault — Vault 管理ルール

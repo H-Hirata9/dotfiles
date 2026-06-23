@@ -13,7 +13,7 @@ description: Record a completed task into the owner's human-readable work log (V
 会話ログではない。
 
 ## 二層構成
-- 正本（主人が読む）: `C:\Users\nov26\Vault\ada_worklog\YYYY-MM-DD.md`（**日次**・追記専用・Obsidian。
+- 正本（主人が読む）: `~/Vault/ada_worklog/YYYY-MM-DD.md`（**日次**・追記専用・Obsidian。
   日報スタイルで1日1ファイル。同じ日の複数タスクは同じファイルに追記する）
 - バックアップ: Google Drive フォルダ `ada_worklog` に **Googleドキュメント**（名前=`YYYY-MM-DD`）として
   ミラー。md→HTML変換してアップロードし、Drive側で整形済みドキュメントに変換される
@@ -27,8 +27,8 @@ description: Record a completed task into the owner's human-readable work log (V
 ## 使い方
 
 ```
-uv run --project C:\Users\nov26\.claude\skills\worklog \
-  python C:\Users\nov26\.claude\skills\worklog\scripts\worklog.py \
+uv run --project ~/.claude/skills/worklog \
+  python ~/.claude/skills/worklog/scripts/worklog.py \
   --title "discord_mybot ニュース刷新" \
   --request "要約改善・保存先整理・クリップ・自動削除" \
   --did "TZ修正/3点箇条書き/news-auto化/Discordクリップ/14日retention。TDD全46緑・Azureデプロイ成功" \

@@ -22,11 +22,11 @@ agy の MCP ブリッジは headless `agy -p` を使う。`-p` に `--model` を
 
 ## 使い方
 ```
-python C:\Users\nov26\.claude\skills\agy-model\set_model.py status
-python C:\Users\nov26\.claude\skills\agy-model\set_model.py list
-python C:\Users\nov26\.claude\skills\agy-model\set_model.py pro
-python C:\Users\nov26\.claude\skills\agy-model\set_model.py flash
-python C:\Users\nov26\.claude\skills\agy-model\set_model.py set "Gemini 4 Pro (High)"
+python ~/.claude/skills/agy-model/set_model.py status
+python ~/.claude/skills/agy-model/set_model.py list
+python ~/.claude/skills/agy-model/set_model.py pro
+python ~/.claude/skills/agy-model/set_model.py flash
+python ~/.claude/skills/agy-model/set_model.py set "Gemini 4 Pro (High)"
 ```
 依存は標準ライブラリのみ（uv 不要、`python` で直接実行可）。
 
