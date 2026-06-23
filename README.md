@@ -2,6 +2,8 @@
 
 Claude Code / OpenAI Codex / GitHub Copilot / Antigravity の共通設定を管理するリポジトリ。
 
+> 新端末を裸の状態から動くADAにする手順は **[BOOTSTRAP.md](BOOTSTRAP.md)** を参照。
+
 ## 構成
 
 ```
@@ -11,8 +13,8 @@ dotfiles/
 │   ├── git.md
 │   ├── security.md
 │   ├── workflow.md
-│   ├── tone/                  # 口調プリセット（1つだけ有効化）
-│   │   ├── associate_girl-jp.md
+│   ├── tone/                  # 口調プリセット（1つだけ有効化。既定=ada-jp）
+│   │   ├── ada-jp.md
 │   │   ├── concise-en.md
 │   │   ├── formal-jp.md
 │   │   ├── kansai-ojisan-jp.md
@@ -29,7 +31,10 @@ dotfiles/
 │   └── AGENTS.md              # setup.sh が自動生成（直接編集しない）
 ├── claude/
 │   ├── CLAUDE.md              # Claude Code 専用設定
-│   └── settings.json          # Claude Code 設定
+│   ├── settings.json          # Claude Code 設定
+│   ├── skills/                # ADA 自作 skill の実体（vendor skill は含めない）
+│   └── hooks/                 # Claude hooks の実体（ada-guard 等。ログは gitignore）
+├── BOOTSTRAP.md               # 新端末セットアップ手順（層0 + 再認証 runbook）
 ├── setup.sh                   # WSL / Linux 用セットアップスクリプト
 └── setup.ps1                  # Windows (PowerShell) 用セットアップスクリプト
 ```
@@ -63,7 +68,9 @@ bash setup.sh --force   # 既存の通常ファイルをバックアップして
 | `~/.claude/settings.json` | `claude/settings.json` |
 | `~/.codex/AGENTS.md` | `codex/AGENTS.md` |
 | `~/.gemini/GEMINI.md` | `gemini/GEMINI.md` |
-| `~/.claude/rules` | `rules/` |
+| `~/.claude/rules` | `rules/`（junction） |
+| `~/.claude/skills/<自作>` | `claude/skills/<自作>`（per-skill junction。vendor skillは対象外） |
+| `~/.claude/hooks` | `claude/hooks/`（junction。`*.log` は gitignore） |
 
 ### smart_link の挙動
 
