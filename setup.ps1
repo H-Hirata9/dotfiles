@@ -405,6 +405,11 @@ if ($InitProject) {
         New-SmartLink -Target $Link.Target -Source $Link.Source
     }
 
+    Write-Host '  グローバル gitignore' -ForegroundColor DarkGray
+    New-SmartLink `
+        -Target (Join-Path $UserProfile '.config\git\ignore') `
+        -Source (Join-Path $DotfilesRoot 'config\git\ignore')
+
     Write-Host '  ~/.claude/rules ジャンクション' -ForegroundColor DarkGray
     New-SmartJunction `
         -Target (Join-Path $UserProfile '.claude\rules') `

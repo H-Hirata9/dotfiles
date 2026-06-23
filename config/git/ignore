@@ -1,0 +1,36 @@
+# グローバル gitignore（全リポ共通）
+# 実体は dotfiles/config/git/ignore。~/.config/git/ignore へリンクして適用（setup.ps1）。
+# 方針: OS生成物・自分のツールのノイズ・万能の安全網のみ。プロジェクト固有は各リポの .gitignore へ。
+
+# === OS ===
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+# Linux
+*~
+.directory
+.Trash-*
+
+# === Python ツールのノイズ ===
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# === Claude ===
+**/.claude/settings.local.json
+CLAUDE.local.md
+
+# === 秘密（dotenvx 等・防御の二重化。.env(暗号化済)はコミットしたいので無視しない） ===
+.env.keys
+.env*.keys
+*.plain.bak
