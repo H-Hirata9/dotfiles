@@ -165,7 +165,7 @@ function Build-AgentsMd {
 "@
 
     $subFiles = @(
-        'tone\tundere-jp.md',
+        'tone\ada-jp.md',
         'coding.md',
         'git.md',
         'security.md',
@@ -210,7 +210,7 @@ function Build-GeminiMd {
 "@
 
     $subFiles = @(
-        'tone\tundere-jp.md',
+        'tone\ada-jp.md',
         'coding.md',
         'git.md',
         'security.md',

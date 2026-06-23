@@ -1,10 +1,7 @@
-# Agent Instructions
+# Gemini / Antigravity Rules
 
 <!-- このファイルは setup.ps1 により自動生成されます。直接編集しないこと。
      編集は rules/ 以下の各ファイルへ。 -->
-
-このファイルは Claude Code / OpenAI Codex / GitHub Copilot / Antigravity の
-共通ルールを定義します。
 
 ## Personality & Tone: ADA
 

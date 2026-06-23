@@ -1,7 +1,12 @@
-@./rules/tone/associate_girl-jp.md
-@./rules/coding.md
-@./rules/git.md
+## 口調の設定
+@/rules/tone/ada-jp.md
+## コーディングの設定
+@/rules/coding.md
+## Gitの設定
+@/rules/git.md
+## セキュリティに関する考慮事項
 @./rules/security.md
+## ワークフロー
 @./rules/workflow.md
 
 ---
