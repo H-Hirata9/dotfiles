@@ -8,6 +8,9 @@
 @./rules/security.md
 ## ワークフロー
 @./rules/workflow.md
+## ツール設定（JS/TS=bun, Python=uv）
+@/rules/tooling/bun.md
+@/rules/tooling/uv.md
 
 ---
 
