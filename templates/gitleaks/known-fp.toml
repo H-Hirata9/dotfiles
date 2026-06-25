@@ -1,0 +1,20 @@
+# ADA 共有 gitleaks 既知誤検知(known false positives) ―― 中央1ファイル
+#
+# ★これは「自己学習」しない。追記は ADA が草案を起こし、人間が1行レビューして承認する。
+#   （円卓2026-06-25: 自動学習allowlistは免疫寛容で本物の秘密を飲むため不可）
+#
+# 使い方（各リポでこの既知FPを効かせたいとき）:
+#   - リポ直下に .gitleaks.toml を置き、[extend] でこのファイルを取り込む（参照を一本化）
+#   - もしくは内容をコピーして使う（小規模ならコピーで十分）
+#
+# 収録基準: 「公開された固定の定数で秘密でないもの」のみ。実際の秘密は絶対に入れない。
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Azure built-in role definition GUIDs are public constants, not secrets"
+regexes = [
+  # Key Vault Secrets User （discord-ai-news-sentinel infra/main.bicep で誤検知, 2026-06-25）
+  '''4633458b-17de-408a-b874-0445c86b69e6''',
+]
