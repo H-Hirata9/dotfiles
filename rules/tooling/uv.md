@@ -23,3 +23,16 @@ Python は **uv（パッケージ/実行）＋ ruff（lint/format）＋ ty（型
 ### ty（型チェック）
 - 型チェック: `uv run ty check`（`mypy`・`pyright` は使わない）
 - 設定は `pyproject.toml` の `[tool.ty]` に書く
+
+### pre-commit（品質ゲート・Pythonプロジェクトごとに設定）
+Python プロジェクトでは毎回 pre-commit で **ruff/ty を必須**（pytest は任意）にする。
+グローバルの `core.hooksPath` (gitleaks) がリポ直下の `.githooks/pre-commit` に委譲する仕組み。
+- セットアップ: テンプレを各リポにコピーしてコミットする
+  ```sh
+  mkdir -p .githooks
+  cp ~/dotfiles/templates/githooks/pre-commit-python .githooks/pre-commit
+  git add .githooks/pre-commit
+  ```
+- 挙動: staged な `.py` に対し ruff check / ruff format --check / ty check を実行（失敗で commit 中止）。pytest は全体実行（`.githooks/pre-commit` 冒頭の `RUN_PYTEST` で ON/OFF、テスト未収集=exit5 は許容）
+- ツール未導入のリポは警告のみでスキップ（`uv add --dev ruff ty pytest` で有効化）
+- 緊急回避: `git commit --no-verify`

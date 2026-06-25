@@ -1,0 +1,52 @@
+#!/bin/sh
+# Python quality gate (per-project)。リポ直下に .githooks/pre-commit として置き、コミットする。
+# core.hooksPath のグローバル pre-commit から委譲されて実行される。
+# ruff / ty は必須（未設定なら警告してスキップ）、pytest は任意。
+# staged な .py が無ければ素通り。緊急回避: git commit --no-verify
+
+# pytest を実行するなら 1、しないなら 0（プロジェクトの性質に合わせる）
+RUN_PYTEST=1
+
+PYFILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
+[ -z "$PYFILES" ] && exit 0
+
+fail=0
+
+# ruff: lint + format（stagedの.pyのみ）
+if uv run --quiet ruff --version >/dev/null 2>&1; then
+	echo "[py-gate] ruff check"
+	uv run ruff check $PYFILES || fail=1
+	echo "[py-gate] ruff format --check"
+	uv run ruff format --check $PYFILES || fail=1
+else
+	echo "[py-gate] ruff 未設定: スキップ（uv add --dev ruff）" >&2
+fi
+
+# ty: 型チェック（stagedの.pyのみ）
+if uv run --quiet ty --version >/dev/null 2>&1; then
+	echo "[py-gate] ty check"
+	uv run ty check $PYFILES || fail=1
+else
+	echo "[py-gate] ty 未設定: スキップ（uv add --dev ty）" >&2
+fi
+
+# pytest: 任意・全体
+if [ "$RUN_PYTEST" = "1" ]; then
+	if uv run --quiet pytest --version >/dev/null 2>&1; then
+		echo "[py-gate] pytest"
+		uv run pytest -q
+		rc=$?
+		# exit 5 = テスト未収集（テスト未作成）は失敗扱いしない
+		if [ "$rc" -ne 0 ] && [ "$rc" -ne 5 ]; then fail=1; fi
+	else
+		echo "[py-gate] pytest 未設定: スキップ（uv add --dev pytest）" >&2
+	fi
+fi
+
+if [ "$fail" -ne 0 ]; then
+	echo "" >&2
+	echo "[py-gate] 品質チェックに失敗したため commit を中止しました。" >&2
+	echo "  修正するか、緊急時は git commit --no-verify で回避。" >&2
+	exit 1
+fi
+exit 0

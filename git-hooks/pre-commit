@@ -21,5 +21,13 @@ if [ "$status" -ne 0 ]; then
 	echo "[gitleaks] 秘密が検知されたため commit を中止しました。" >&2
 	echo "  - 本物の秘密なら: コードから除去し、環境変数 / Key Vault へ移す" >&2
 	echo "  - 誤検知なら: リポジトリ直下の .gitleaksignore に Finding ID を追記する" >&2
+	exit "$status"
 fi
-exit "$status"
+
+# 各リポ固有の pre-commit へ委譲（例: Pythonプロジェクトの品質ゲート）。
+# 無いリポは素通り。テンプレ: dotfiles/templates/githooks/pre-commit-python
+if [ -f "./.githooks/pre-commit" ]; then
+	sh "./.githooks/pre-commit" || exit 1
+fi
+
+exit 0
