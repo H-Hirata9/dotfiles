@@ -3,7 +3,7 @@ name = "pdf-to-wiki"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-    "pypdf>=6.12.2",
+    "pypdf>=6.13.3",
 ]
 
 [dependency-groups]
