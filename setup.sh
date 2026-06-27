@@ -303,6 +303,21 @@ else
     status WARN "ada-skills submodule not initialized. Run: git submodule update --init"
   fi
 
+  # 自作 Codex skills ジャンクション（同じ ada-skills サブモジュールから）
+  echo '  自作 Codex skills ジャンクション (ada-skills サブモジュール)'
+  CODEX_SKILLS_DST="$HOME/.codex/skills"
+  if [[ -d "$SKILLS_SRC" ]]; then
+    mkdir -p "$CODEX_SKILLS_DST"
+    for skill_dir in "$SKILLS_SRC"/*/; do
+      skill_name="$(basename "$skill_dir")"
+      if ! echo "$VENDOR_SKILLS" | grep -qw "$skill_name"; then
+        smart_link "$CODEX_SKILLS_DST/$skill_name" "$skill_dir"
+      fi
+    done
+  else
+    status WARN "ada-skills submodule not initialized. Run: git submodule update --init"
+  fi
+
   echo '  gitleaks pre-commit hook (秘密スキャン)'
   setup_secret_scan_hook
 

@@ -438,6 +438,20 @@ if ($InitProject) {
         Write-Status 'WARN' "ada-skills submodule not initialized. Run: git submodule update --init" 'Yellow'
     }
 
+    # 自作 Codex skills を per-skill junction（同じ ada-skills サブモジュールから）
+    $CodexSkillsDstDir = Join-Path $UserProfile '.codex\skills'
+    Write-Host '  自作 Codex skills ジャンクション (ada-skills サブモジュール)' -ForegroundColor DarkGray
+    if (Test-Path $SkillsSrcDir -PathType Container) {
+        if (-not (Test-Path $CodexSkillsDstDir)) {
+            New-Item -ItemType Directory -Path $CodexSkillsDstDir -Force | Out-Null
+        }
+        Get-ChildItem $SkillsSrcDir -Directory | Where-Object { $VendorSkills -notcontains $_.Name } | ForEach-Object {
+            New-SmartJunction -Target (Join-Path $CodexSkillsDstDir $_.Name) -Source $_.FullName
+        }
+    } else {
+        Write-Status 'WARN' "ada-skills submodule not initialized. Run: git submodule update --init" 'Yellow'
+    }
+
     Write-Host '  ~/.claude/hooks ジャンクション' -ForegroundColor DarkGray
     New-SmartJunction `
         -Target (Join-Path $UserProfile '.claude\hooks') `
