@@ -1,9 +1,0 @@
-[project]
-name = "dotenvx-skill"
-version = "0.1.0"
-description = "dotenvx migration doctor (read-only health check)"
-requires-python = ">=3.11"
-dependencies = []
-
-[dependency-groups]
-dev = ["pytest>=8"]
