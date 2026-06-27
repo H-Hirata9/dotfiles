@@ -286,6 +286,23 @@ else
     smart_link "$target" "$source"
   done
 
+  # 自作 Claude skills ジャンクション (ada-skills サブモジュール)
+  echo '  自作 Claude skills ジャンクション (ada-skills サブモジュール)'
+  SKILLS_SRC="$DOTFILES/claude/skills"
+  SKILLS_DST="$HOME/.claude/skills"
+  VENDOR_SKILLS="firecrawl-build-interact firecrawl-build-onboarding firecrawl-build-scrape firecrawl-build-search firecrawl-company-directories firecrawl-competitive-intel firecrawl-dashboard-reporting firecrawl-deep-research firecrawl-demo-walkthrough firecrawl-knowledge-base firecrawl-knowledge-ingest firecrawl-lead-gen firecrawl-lead-research firecrawl-market-research firecrawl-qa firecrawl-research-papers firecrawl-seo-audit firecrawl-shop firecrawl-website-design-clone firecrawl-workflows pptx find-skills skill-creator"
+  if [[ -d "$SKILLS_SRC" ]]; then
+    mkdir -p "$SKILLS_DST"
+    for skill_dir in "$SKILLS_SRC"/*/; do
+      skill_name="$(basename "$skill_dir")"
+      if ! echo "$VENDOR_SKILLS" | grep -qw "$skill_name"; then
+        smart_link "$SKILLS_DST/$skill_name" "$skill_dir"
+      fi
+    done
+  else
+    status WARN "ada-skills submodule not initialized. Run: git submodule update --init"
+  fi
+
   echo '  gitleaks pre-commit hook (秘密スキャン)'
   setup_secret_scan_hook
 

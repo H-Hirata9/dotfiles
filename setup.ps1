@@ -415,23 +415,27 @@ if ($InitProject) {
         -Target (Join-Path $UserProfile '.claude\rules') `
         -Source (Join-Path $DotfilesRoot 'rules')
 
-    # 自作 Claude skills を per-skill junction（vendor skill には触らない＝物理分離）
-    $CustomSkills = @(
-        'evaluator', 'session-search', 'agy-model', 'gws', 'worklog',
-        'obsidian-vault', 'youtube-eval', 'weekly-report', 'pdf-to-wiki',
-        'add-knowledge-source', 'chusho-policy', 'tts', 'python-tool-dev', 'dotenvx',
-        'nature-remo'
+    # 自作 Claude skills を per-skill junction（ada-skills サブモジュールから）
+    # vendor skills（firecrawl-*, pptx, find-skills, skill-creator）は除外
+    $VendorSkills = @(
+        'firecrawl-build-interact', 'firecrawl-build-onboarding', 'firecrawl-build-scrape',
+        'firecrawl-build-search', 'firecrawl-company-directories', 'firecrawl-competitive-intel',
+        'firecrawl-dashboard-reporting', 'firecrawl-deep-research', 'firecrawl-demo-walkthrough',
+        'firecrawl-knowledge-base', 'firecrawl-knowledge-ingest', 'firecrawl-lead-gen',
+        'firecrawl-lead-research', 'firecrawl-market-research', 'firecrawl-qa',
+        'firecrawl-research-papers', 'firecrawl-seo-audit', 'firecrawl-shop',
+        'firecrawl-website-design-clone', 'firecrawl-workflows',
+        'pptx', 'find-skills', 'skill-creator'
     )
     $SkillsSrcDir = Join-Path $DotfilesRoot 'claude\skills'
     $SkillsDstDir = Join-Path $UserProfile '.claude\skills'
-    Write-Host '  自作 Claude skills ジャンクション' -ForegroundColor DarkGray
-    foreach ($s in $CustomSkills) {
-        $src = Join-Path $SkillsSrcDir $s
-        if (-not (Test-Path $src -PathType Container)) {
-            Write-Status 'Skip' "skill source not in dotfiles yet: $s" 'Gray'
-            continue
+    Write-Host '  自作 Claude skills ジャンクション (ada-skills サブモジュール)' -ForegroundColor DarkGray
+    if (Test-Path $SkillsSrcDir -PathType Container) {
+        Get-ChildItem $SkillsSrcDir -Directory | Where-Object { $VendorSkills -notcontains $_.Name } | ForEach-Object {
+            New-SmartJunction -Target (Join-Path $SkillsDstDir $_.Name) -Source $_.FullName
         }
-        New-SmartJunction -Target (Join-Path $SkillsDstDir $s) -Source $src
+    } else {
+        Write-Status 'WARN' "ada-skills submodule not initialized. Run: git submodule update --init" 'Yellow'
     }
 
     Write-Host '  ~/.claude/hooks ジャンクション' -ForegroundColor DarkGray
