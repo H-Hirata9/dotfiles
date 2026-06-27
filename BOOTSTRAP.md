@@ -30,14 +30,16 @@
 
 ### 3. dotfiles を展開
 ```powershell
-git clone https://github.com/H-Hirata9/dotfiles.git $env:USERPROFILE\dotfiles
+# ada-skills サブモジュールごと一括取得
+git clone --recurse-submodules https://github.com/H-Hirata9/dotfiles.git $env:USERPROFILE\dotfiles
 cd $env:USERPROFILE\dotfiles
 .\setup.ps1 -DryRun    # 確認
 .\setup.ps1 -Force     # 適用
 ```
 `setup.ps1` がやること:
 - `~/.claude/CLAUDE.md` `~/.claude/settings.json` をリンク
-- `~/.claude/rules` `~/.claude/skills/<自作>` `~/.claude/hooks` を junction（vendor skillには触れない）
+- `~/.claude/rules` `~/.claude/hooks` を junction
+- `~/.claude/skills/<カスタムスキル>` を junction（ソース: ada-skills サブモジュール `claude/skills/`。vendor skillには触れない）
 - `codex/AGENTS.md` `gemini/GEMINI.md` を ADA トーンで生成
 - gitleaks を導入し global `core.hooksPath` を設定
 
