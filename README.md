@@ -144,6 +144,39 @@ bash ~/dotfiles/setup.sh init-project python --dry-run       # 確認のみ
 
 プロジェクト CLAUDE.md には固有の内容だけ書く。共通ルールはグローバル設定で自動適用される。
 
+## DeepSeek バックエンドへの切り替え
+
+`scripts/Use-DeepSeek.ps1` を使うと、Claude Code のバックエンドを一時的に DeepSeek に切り替えられる。
+
+### 準備
+
+`~/.claude/deepseek.env` を作成してAPIキーを記載する（git には入れない）:
+
+```
+DEEPSEEK_API_KEY=sk-xxxxxxxxxxxx
+```
+
+### 使い方（PowerShell）
+
+```powershell
+# DeepSeek に切り替え（ドットソース必須）
+. ~/dotfiles/scripts/Use-DeepSeek.ps1
+
+# このシェルで claude を起動すると DeepSeek バックエンドで動く
+claude
+
+# Anthropic に戻す
+. ~/dotfiles/scripts/Use-DeepSeek.ps1 -Mode Unset
+```
+
+> ドットソース（`. スクリプト`）で実行しないと現在のシェルに環境変数が反映されない。
+
+別の `.env` ファイルを指定したい場合:
+
+```powershell
+. ~/dotfiles/scripts/Use-DeepSeek.ps1 -EnvFile C:\path\to\.env
+```
+
 ## GitHub Copilot / Antigravity（プロジェクト単位）
 
 プロジェクトの `.github/copilot-instructions.md` や `AGENTS.md` に
