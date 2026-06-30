@@ -434,6 +434,21 @@ if ($InitProject) {
         Get-ChildItem $SkillsSrcDir -Directory | Where-Object { $VendorSkills -notcontains $_.Name } | ForEach-Object {
             New-SmartJunction -Target (Join-Path $SkillsDstDir $_.Name) -Source $_.FullName
         }
+        # vendor skills: vendor.marker を自動配置（なければ作成）
+        Write-Host '  vendor.marker 自動配置' -ForegroundColor DarkGray
+        foreach ($skill in $VendorSkills) {
+            $skillSrc = Join-Path $SkillsSrcDir $skill
+            if (-not (Test-Path $skillSrc -PathType Container)) { continue }
+            $marker = Join-Path $skillSrc 'vendor.marker'
+            if (Test-Path $marker) {
+                Write-Status 'Skip' "vendor.marker 既存: $skill" 'Gray'
+            } elseif ($DryRun) {
+                Write-Status 'DryRun' "Would create vendor.marker: $skill" 'Cyan'
+            } else {
+                New-Item -ItemType File -Path $marker -Force | Out-Null
+                Write-Status 'Marker' "vendor.marker -> $skill" 'Green'
+            }
+        }
     } else {
         Write-Status 'WARN' "ada-skills submodule not initialized. Run: git submodule update --init" 'Yellow'
     }
