@@ -460,6 +460,34 @@ if ($InitProject) {
     Write-Host '  gitleaks pre-commit hook (秘密スキャン)' -ForegroundColor DarkGray
     Set-SecretScanHook
 
+    # ADA 外部記憶リポジトリ（ada-memory）
+    Write-Host '  ADA 外部記憶リポジトリ (ada-memory)' -ForegroundColor DarkGray
+    $AdaMemoryDir = Join-Path $UserProfile '.claude\ada'
+    $AdaMemoryRepo = 'https://github.com/H-Hirata9/ada-memory.git'
+    if (Test-Path (Join-Path $AdaMemoryDir '.git')) {
+        Write-Status 'Skip' "ada-memory は既にクローン済み: $AdaMemoryDir" 'Gray'
+    } elseif ($DryRun) {
+        Write-Status 'DryRun' "Would clone: $AdaMemoryRepo -> $AdaMemoryDir" 'Cyan'
+    } else {
+        git clone $AdaMemoryRepo $AdaMemoryDir
+        Write-Status 'Cloned' "$AdaMemoryRepo -> $AdaMemoryDir" 'Green'
+    }
+
+    # retire_scan.py の依存関係インストール（uv sync）
+    $UvExe = (Get-Command uv -ErrorAction SilentlyContinue)?.Source
+    if ($UvExe -and (Test-Path (Join-Path $AdaMemoryDir 'pyproject.toml'))) {
+        if ($DryRun) {
+            Write-Status 'DryRun' "Would run: uv sync in $AdaMemoryDir" 'Cyan'
+        } else {
+            Push-Location $AdaMemoryDir
+            uv sync
+            Pop-Location
+            Write-Status 'UvSync' "retire_scan.py 依存関係インストール完了" 'Green'
+        }
+    } elseif (-not $UvExe) {
+        Write-Status 'WARN' "uv が見つかりません。手動で uv sync を実行してください: cd $AdaMemoryDir && uv sync" 'Yellow'
+    }
+
     Write-Host ''
     Write-Host 'セットアップ完了！' -ForegroundColor Green
     Write-Host 'Claude Code を再起動して変更を反映してください。'
