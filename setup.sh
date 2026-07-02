@@ -70,7 +70,7 @@ build_agents_md() {
   local dest="$DOTFILES/codex/AGENTS.md"
 
   local sub_files=(
-    "tone/tundere-jp.md"
+    "../rules-presets/tone/tundere-jp.md"
     "coding.md"
     "git.md"
     "security.md"
@@ -118,7 +118,7 @@ build_gemini_md() {
   local dest="$DOTFILES/gemini/GEMINI.md"
 
   local sub_files=(
-    "tone/tundere-jp.md"
+    "../rules-presets/tone/tundere-jp.md"
     "coding.md"
     "git.md"
     "security.md"
