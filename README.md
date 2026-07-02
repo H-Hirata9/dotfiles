@@ -153,7 +153,7 @@ bash ~/dotfiles/setup.sh init-project python --dry-run       # 確認のみ
 
 ### 準備
 
-`~/.claude/deepseek.env` を作成してAPIキーを記載する（git には入れない）:
+`~/.claude/.env.deepseek` を作成してAPIキーを記載する（git には入れない）:
 
 ```
 DEEPSEEK_API_KEY=sk-xxxxxxxxxxxx

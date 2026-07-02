@@ -3,17 +3,17 @@
     Claude Code のバックエンドを DeepSeek に切り替える／元に戻す
 
 .DESCRIPTION
-    Set  : ~/.claude/deepseek.env から DEEPSEEK_API_KEY を読んで環境変数をセット
+    Set  : ~/.claude/.env.deepseek から DEEPSEEK_API_KEY を読んで環境変数をセット
     Unset: 環境変数を削除して Anthropic モードに戻す
 
-    deepseek.env の書き方:
+    .env.deepseek の書き方:
         DEEPSEEK_API_KEY=sk-xxxxxxxxxxxx
 
 .PARAMETER Mode
     Set または Unset（省略時は Set）
 
 .PARAMETER EnvFile
-    .env ファイルのパス（省略時は ~/.claude/deepseek.env）
+    .env ファイルのパス（省略時は ~/.claude/.env.deepseek）
 
 .EXAMPLE
     . .\Use-DeepSeek.ps1                      # Set（ドットソース必須）
@@ -24,7 +24,7 @@
 param(
     [ValidateSet('Set', 'Unset')]
     [string]$Mode = 'Set',
-    [string]$EnvFile = (Join-Path $env:USERPROFILE '.claude\deepseek.env')
+    [string]$EnvFile = (Join-Path $env:USERPROFILE '.claude\.env.deepseek')
 )
 
 $Vars = @(
