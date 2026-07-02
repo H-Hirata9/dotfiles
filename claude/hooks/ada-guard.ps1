@@ -2,9 +2,15 @@
 # Hard-blocks ONLY catastrophic commands; audit-logs other destructive ops; allows everything else.
 # Contract: exit 2 = block (reason on stderr); exit 0 = allow. Fails open on errors.
 # stdin: JSON with .tool_input.command  (matcher: Bash|PowerShell)
+# Scan strategy: quoted string literals are stripped first (so prose args like
+# worklog --did "..." don't false-positive), then quoted payloads that follow an
+# exec flag (pwsh -Command "...", bash -c "...") are re-added, since those are
+# actually executed and must not escape detection via quoting alone.
+# Set $env:ADA_GUARD_LOG to override the audit log path (used by tests).
 
 $ErrorActionPreference = 'Stop'
 $logFile = Join-Path $PSScriptRoot 'ada-guard.log'
+if ($env:ADA_GUARD_LOG) { $logFile = $env:ADA_GUARD_LOG }
 
 function Write-Audit([string]$decision, [string]$pattern, [string]$cmd) {
     try {
@@ -36,6 +42,19 @@ try {
 # Real catastrophic commands (rm -rf /) are not normally quoted, so they still match.
 $scan = $cmd -replace '"[^"]*"', '' -replace "'[^']*'", ''
 
+# Quote-stripping must not hide payloads that are EXECUTED (pwsh -Command "...",
+# bash -c '...', node -e "..."). Extract quoted strings that directly follow an
+# exec flag and scan them too. Prose arguments (worklog --did "...") are not
+# preceded by an exec flag, so they stay excluded.
+$payloadRe = '(?i)(?:^|[\s;|&(])(?:-{1,2}command|-c|/c|-e|--eval|iex|invoke-expression)\s+(?:"([^"]*)"|''([^'']*)'')'
+$payloads = @()
+foreach ($m in [regex]::Matches($cmd, $payloadRe)) {
+    foreach ($g in 1, 2) {
+        if ($m.Groups[$g].Success -and $m.Groups[$g].Value) { $payloads += $m.Groups[$g].Value }
+    }
+}
+if ($payloads.Count -gt 0) { $scan = $scan + "`n" + ($payloads -join "`n") }
+
 # ---- CATASTROPHIC: hard block (no legitimate use) ----
 $catastrophic = @(
     @{ name = 'rm -rf root/home/drive';      re = '(?i)\brm\b[^;|&\n]*\s-[a-z]*r[a-z]*\s+(-[a-z]+\s+)*(/(\s|;|&|\||$)|~/?(\s|;|&|\||$)|\$\{?HOME\}?/?(\s|;|&|\||$)|/c/Users/nov26/?(\s|;|&|\||$)|[a-z]:[\\/]?(\s|;|&|\||$))' },
@@ -44,7 +63,8 @@ $catastrophic = @(
     @{ name = 'fork bomb';                   re = ':\(\)\s*\{\s*:\s*\|\s*:?\s*&\s*\}' },
     @{ name = 'mkfs';                        re = '(?i)\bmkfs(\.\w+)?\b' },
     @{ name = 'dd to device';                re = '(?i)\bdd\b[^;|\n]*\bof=\s*/dev/' },
-    @{ name = 'redirect to block device';    re = '(?i)>\s*/dev/(sd|nvme|disk|hd)' }
+    @{ name = 'redirect to block device';    re = '(?i)>\s*/dev/(sd|nvme|disk|hd)' },
+    @{ name = 'powershell -EncodedCommand'; re = '(?i)\b(?:powershell|pwsh)(?:\.exe)?\b[^;|&\n]*\s-e(?:c|nc(?:odedcommand)?)?(?=\s|$)' }
 )
 foreach ($p in $catastrophic) {
     if ($scan -match $p.re) {
