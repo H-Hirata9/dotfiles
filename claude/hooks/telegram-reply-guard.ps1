@@ -2,10 +2,12 @@
 # Purpose: Stop hook that prevents stopping when a Telegram-originated turn
 #          has not been answered via the reply tool.
 # Author: ADA (Claude Code)
-# Approved: 2026-06-17
+# Approved: 2026-06-17 (perf/detection rework: 2026-07-02)
 #
-# Logic: parse the transcript and compare entry timestamps of
-#   - last incoming Telegram message (user, source="plugin:telegram:telegram")
+# Logic: delegated to Get-ReplyGuardDecision in telegram-reply-guard-lib.ps1
+# (dot-sourced below). See that file for the comparison logic:
+#   - last incoming Telegram message marker (role-agnostic; a known bug
+#     can record incoming messages as type="assistant")
 #   - last reply tool call (assistant, tool_use name=mcp__plugin_telegram_telegram__reply)
 # If the incoming message is newer (i.e. not yet replied), block the stop.
 # MUST run under pwsh (PowerShell 7): Windows PowerShell 5.1's ConvertFrom-Json
@@ -64,61 +66,21 @@ try {
     Write-GuardLog ("transcript_path = {0}" -f $tp)
     if (-not $tp -or -not (Test-Path -LiteralPath $tp)) { Write-GuardLog 'EXIT: no transcript -> allow'; exit 0 }
 
-    # Compare by entry timestamp, not line order: queued messages can be written
-    # to the transcript out of chronological order, which would falsely flag a
-    # reply as missing. ISO 8601 UTC (...Z) sorts lexically == chronologically.
-    $lines = Get-Content -LiteralPath $tp
-    $lastTelegram = [datetime]::MinValue
-    $lastReply = [datetime]::MinValue
-    $foundTelegram = $false
+    . (Join-Path $PSScriptRoot 'telegram-reply-guard-lib.ps1')
 
-    foreach ($line in $lines) {
-        if ([string]::IsNullOrWhiteSpace($line)) { continue }
-        try { $e = $line | ConvertFrom-Json } catch { continue }
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $decision = Get-ReplyGuardDecision -TranscriptPath $tp
+    $sw.Stop()
 
-        if (-not $e.timestamp) { continue }
-        try { $ts = [datetime]$e.timestamp } catch { continue }
+    Write-GuardLog ("DECISION: {0} ({1} ms)" -f $decision, $sw.ElapsedMilliseconds)
 
-        $role = $e.type
-        if ($role -eq 'user') {
-            $content = $e.message.content
-            $text = ''
-            if ($content -is [string]) {
-                $text = $content
-            }
-            elseif ($content) {
-                foreach ($b in $content) {
-                    if ($b.type -eq 'text' -and $b.text) { $text += $b.text }
-                }
-            }
-            if ($text -match 'source="plugin:telegram:telegram"') {
-                $foundTelegram = $true
-                if ($ts -gt $lastTelegram) { $lastTelegram = $ts }
-            }
-        }
-        elseif ($role -eq 'assistant') {
-            $content = $e.message.content
-            if ($content -and -not ($content -is [string])) {
-                foreach ($b in $content) {
-                    if ($b.type -eq 'tool_use' -and $b.name -eq 'mcp__plugin_telegram_telegram__reply') {
-                        if ($ts -gt $lastReply) { $lastReply = $ts }
-                    }
-                }
-            }
-        }
-    }
-
-    Write-GuardLog ("lastTelegram={0:o} lastReply={1:o}" -f $lastTelegram, $lastReply)
-
-    if ($foundTelegram -and $lastTelegram -gt $lastReply) {
+    if ($decision -eq 'block') {
         $reason = 'Unsent Telegram reply: you have NOT called the reply tool (mcp__plugin_telegram_telegram__reply) for the latest incoming Telegram message. Plain transcript text never reaches the user. Before stopping, you MUST send your answer to Telegram via the reply tool.'
         $out = @{ decision = 'block'; reason = $reason } | ConvertTo-Json -Compress
-        Write-GuardLog 'DECISION: BLOCK'
         Write-Output $out
         exit 0
     }
 
-    Write-GuardLog 'DECISION: allow'
     exit 0
 }
 catch {
