@@ -1,0 +1,72 @@
+# ADA routines manifest — 定期タスクの宣言的正本
+# 適用・確認は scripts/routines.py（check=読み取り専用 / install --apply=承認必須）
+# schedule は cron 風 "分 時 日 月 曜日"（曜日 0=日曜）。対応は daily / weekly / monthly の3パターンのみ
+# command のツール名（pwsh / python / uv / dotenvx）は論理名。絶対パスは書かず、インストーラが実行時に解決する
+# venv-python は <workdir>/.venv の python を指す
+
+[[routine]]
+name = "ADA Security Audit"
+description = "週次セキュリティ監査（security-audit skill）"
+schedule = "0 18 * * 0"
+commands = ["pwsh -NoProfile -ExecutionPolicy Bypass -File ~/.claude/skills/security-audit/scripts/run-audit.ps1"]
+workdir = ""
+enabled = true
+
+[[routine]]
+name = "ADA-AzureWatch"
+description = "func-ai-news-sentinel-prod の監視。workdir が health_sync なのは .env(dotenvx) をそこから読むため"
+schedule = "30 9 * * *"
+commands = ["dotenvx run -- python ~/.claude/ada/loops/azure-watch/watch.py"]
+workdir = "~/projects/life/health_sync"
+enabled = true
+
+[[routine]]
+name = "ADA-DailyTriage"
+description = "毎朝の便り（棚卸しリマインド含む）"
+schedule = "0 8 * * *"
+commands = ["python triage.py"]
+workdir = "~/.claude/ada/loops/daily-triage"
+enabled = true
+
+[[routine]]
+name = "ADA-Evaluator"
+description = "月次品質評価（evaluator skill）。毎月20日19:00"
+schedule = "0 19 20 * *"
+commands = ["uv run --project ~/.claude/skills/evaluator python ~/.claude/skills/evaluator/scripts/eval_collect.py --write"]
+workdir = ""
+enabled = true
+
+[[routine]]
+name = "ADA-HealthFetch"
+description = "Fitbit→Google Health→cch-bot-knowledge の日次取得＋検証（2コマンド直列）"
+schedule = "0 9 * * *"
+commands = [
+  "dotenvx run -- uv run python fetch_health.py",
+  "dotenvx run -- uv run python health_verify.py",
+]
+workdir = "~/projects/life/health_sync"
+enabled = true
+
+[[routine]]
+name = "ADA-HealthTrend"
+description = "健康データ週次トレンド（月曜朝）"
+schedule = "30 9 * * 1"
+commands = ["dotenvx run -- uv run python health_trend.py"]
+workdir = "~/projects/life/health_sync"
+enabled = true
+
+[[routine]]
+name = "ADA-PythonWeekly"
+description = "Python Weekly の週次取得（金曜昼）"
+schedule = "0 12 * * 5"
+commands = ["venv-python fetch_python_weekly.py"]
+workdir = "~/projects/life/python_weekly"
+enabled = true
+
+[[routine]]
+name = "ZundamonShindan"
+description = "ずんだもん診断士アラート（毎晩21時）"
+schedule = "0 21 * * *"
+commands = ["venv-python zundamon_alert.py"]
+workdir = "~/projects/life/study-shindan"
+enabled = true
