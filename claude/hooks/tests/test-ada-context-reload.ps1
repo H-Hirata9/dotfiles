@@ -16,7 +16,7 @@ function Assert-Eq($actual, $expected, $name) {
     else { Write-Host "PASS: $name" }
 }
 
-$tmp = Join-Path $env:TEMP ("ada_ctx_test_" + [guid]::NewGuid().ToString('N'))
+$tmp = Join-Path ([IO.Path]::GetTempPath())("ada_ctx_test_" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tmp | Out-Null
 try {
     # --- Fixture: index.md + pending.md + 2 handovers ---
@@ -47,7 +47,7 @@ try {
     Assert-NotContains $result '2026-07-01_1200.md' "old handover filename is not referenced"
 
     # 5. index.md only (no handovers) -> pointer line absent, index body present
-    $tmp2 = Join-Path $env:TEMP ("ada_ctx_test_" + [guid]::NewGuid().ToString('N'))
+    $tmp2 = Join-Path ([IO.Path]::GetTempPath())("ada_ctx_test_" + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $tmp2 | Out-Null
     try {
         'INDEX_ONLY_MARKER' | Set-Content (Join-Path $tmp2 'index.md')
@@ -60,7 +60,7 @@ try {
     }
 
     # 6. empty directory -> empty string, no error
-    $tmp3 = Join-Path $env:TEMP ("ada_ctx_test_" + [guid]::NewGuid().ToString('N'))
+    $tmp3 = Join-Path ([IO.Path]::GetTempPath())("ada_ctx_test_" + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $tmp3 | Out-Null
     try {
         $result3 = Get-AdaContextReloadText $tmp3

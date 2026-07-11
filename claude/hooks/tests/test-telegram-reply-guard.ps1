@@ -36,7 +36,7 @@ function New-ReplyLine([string]$ts) {
 
 $incomingText = '<channel source="plugin:telegram:telegram" chat_id="1">hello</channel>'
 
-$tmp = Join-Path $env:TEMP ("trg_test_" + [guid]::NewGuid().ToString('N'))
+$tmp = Join-Path ([IO.Path]::GetTempPath())("trg_test_" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tmp | Out-Null
 
 function Write-Fixture([string]$name, [string[]]$lines) {

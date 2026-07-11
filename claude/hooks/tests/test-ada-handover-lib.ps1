@@ -8,7 +8,7 @@ function Assert-Eq($actual, $expected, $name) {
     else { Write-Host "PASS: $name" }
 }
 
-$tmp = Join-Path $env:TEMP ("ada_ho_test_" + [guid]::NewGuid().ToString('N'))
+$tmp = Join-Path ([IO.Path]::GetTempPath())("ada_ho_test_" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tmp | Out-Null
 try {
     Assert-Eq (Get-LatestHandover $tmp) $null "empty dir returns null"

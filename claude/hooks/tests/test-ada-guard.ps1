@@ -8,11 +8,11 @@ function Assert-Eq($actual, $expected, $name) {
 }
 
 $guardScript = Join-Path $PSScriptRoot '..\ada-guard.ps1'
-$testLog = Join-Path $env:TEMP ("ada_guard_test_" + [guid]::NewGuid().ToString('N') + '.log')
+$testLog = Join-Path ([IO.Path]::GetTempPath())("ada_guard_test_" + [guid]::NewGuid().ToString('N') + '.log')
 $env:ADA_GUARD_LOG = $testLog
 
 function Invoke-Guard([string]$cmd) {
-    $jsonFile = Join-Path $env:TEMP ("ada_guard_input_" + [guid]::NewGuid().ToString('N') + '.json')
+    $jsonFile = Join-Path ([IO.Path]::GetTempPath())("ada_guard_input_" + [guid]::NewGuid().ToString('N') + '.json')
     try {
         $payload = @{ tool_input = @{ command = $cmd } } | ConvertTo-Json -Compress
         Set-Content -LiteralPath $jsonFile -Value $payload -Encoding utf8 -NoNewline
@@ -27,7 +27,7 @@ try {
     # ---- BLOCK cases (exit 2) ----
     Assert-Eq (Invoke-Guard 'rm -rf /') 2 'BLOCK: rm -rf / (regression)'
     Assert-Eq (Invoke-Guard 'git push --force origin main') 2 'BLOCK: git push --force (regression)'
-    Assert-Eq (Invoke-Guard 'pwsh -Command "Remove-Item C:\Users\nov26 -Recurse -Force"') 2 'BLOCK: pwsh -Command quote bypass'
+    Assert-Eq (Invoke-Guard ('pwsh -Command "Remove-Item ' + $HOME + ' -Recurse -Force"')) 2 'BLOCK: pwsh -Command quote bypass'
     Assert-Eq (Invoke-Guard 'bash -c "rm -rf ~"') 2 'BLOCK: bash -c double-quote bypass'
     Assert-Eq (Invoke-Guard "bash -c 'rm -rf /'") 2 'BLOCK: bash -c single-quote bypass'
     Assert-Eq (Invoke-Guard 'powershell -EncodedCommand SQBFAFgAIAB4AA==') 2 'BLOCK: powershell -EncodedCommand'

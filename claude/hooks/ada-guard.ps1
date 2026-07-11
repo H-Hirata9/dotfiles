@@ -56,9 +56,14 @@ foreach ($m in [regex]::Matches($cmd, $payloadRe)) {
 if ($payloads.Count -gt 0) { $scan = $scan + "`n" + ($payloads -join "`n") }
 
 # ---- CATASTROPHIC: hard block (no legitimate use) ----
+# home patterns are built from $HOME so the guard works for any user/OS (was hardcoded nov26)
+$homeNativeRe = [regex]::Escape($HOME)
+$homePosixRe = if ($HOME -match '^[A-Za-z]:') {
+    [regex]::Escape('/' + $HOME.Substring(0, 1).ToLower() + ($HOME.Substring(2) -replace '\\', '/'))
+} else { $homeNativeRe }
 $catastrophic = @(
-    @{ name = 'rm -rf root/home/drive';      re = '(?i)\brm\b[^;|&\n]*\s-[a-z]*r[a-z]*\s+(-[a-z]+\s+)*(/(\s|;|&|\||$)|~/?(\s|;|&|\||$)|\$\{?HOME\}?/?(\s|;|&|\||$)|/c/Users/nov26/?(\s|;|&|\||$)|[a-z]:[\\/]?(\s|;|&|\||$))' },
-    @{ name = 'Remove-Item -Recurse -Force root/home'; re = '(?i)Remove-Item\b(?=[^;|\n]*-Recurse)(?=[^;|\n]*-Force)[^;|\n]*(\s|["''])([a-z]:\\?(\s|;|"|''|$)|~|\$HOME|\$env:USERPROFILE|C:\\Users\\nov26(\\+)?(\s|;|"|''|$))' },
+    @{ name = 'rm -rf root/home/drive';      re = '(?i)\brm\b[^;|&\n]*\s-[a-z]*r[a-z]*\s+(-[a-z]+\s+)*(/(\s|;|&|\||$)|~/?(\s|;|&|\||$)|\$\{?HOME\}?/?(\s|;|&|\||$)|' + $homePosixRe + '/?(\s|;|&|\||$)|[a-z]:[\\/]?(\s|;|&|\||$))' },
+    @{ name = 'Remove-Item -Recurse -Force root/home'; re = '(?i)Remove-Item\b(?=[^;|\n]*-Recurse)(?=[^;|\n]*-Force)[^;|\n]*(\s|["''])([a-z]:\\?(\s|;|"|''|$)|~|\$HOME|\$env:USERPROFILE|' + $homeNativeRe + '(\\+)?(\s|;|"|''|$))' },
     @{ name = 'git push --force';            re = '(?i)git\s+push\b[^;|\n]*(--force(\s|$|[^-])|\s-f(\s|$))' },
     @{ name = 'fork bomb';                   re = ':\(\)\s*\{\s*:\s*\|\s*:?\s*&\s*\}' },
     @{ name = 'mkfs';                        re = '(?i)\bmkfs(\.\w+)?\b' },
