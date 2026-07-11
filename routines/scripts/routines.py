@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -29,7 +30,6 @@ _DOW_FULL = [
     "Friday",
     "Saturday",
 ]
-_SCHTASKS_DOW = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
 _LOGICAL_TOOLS = {"pwsh", "python", "uv", "dotenvx"}
 
 
@@ -81,25 +81,96 @@ def to_oncalendar(sched: dict) -> str:
     raise ValueError(f"unknown schedule kind: {kind!r}")
 
 
-def to_schtasks_args(name: str, sched: dict, cmdline: str) -> list[str]:
+def pick_system_python(
+    path_entries: list[str],
+    finder: Callable[[str], str | None],
+    virtual_env: str = "",
+) -> str:
+    venv_norm = os.path.normcase(os.path.normpath(virtual_env)) if virtual_env else ""
+    for entry in path_entries:
+        if not entry:
+            continue
+        norm = os.path.normcase(os.path.normpath(entry))
+        if ".venv" in norm.replace("\\", "/").split("/"):
+            continue
+        if venv_norm and (norm == venv_norm or norm.startswith(venv_norm + os.sep)):
+            continue
+        found = finder(entry)
+        if found:
+            return found
+    raise ValueError("no system python found on PATH (all candidates are venv)")
+
+
+def _split_exe(cmdline: str) -> tuple[str, str]:
+    tokens = cmdline.split()
+    if not tokens:
+        return "", ""
+    # exeの絶対パスは空白を含みうる(Program Files等)ため最初の.exe終端までをCommandとする
+    for i, tok in enumerate(tokens):
+        if tok.lower().endswith(".exe"):
+            return " ".join(tokens[: i + 1]), " ".join(tokens[i + 1 :])
+    return tokens[0], " ".join(tokens[1:])
+
+
+def task_xml(routine: dict, sched: dict, resolved_cmds: list[str]) -> str:
+    from xml.sax.saxutils import escape
+
     kind = sched["kind"]
-    st = f"{sched['hour']:02d}:{sched['minute']:02d}"
-    base = ["schtasks", "/create", "/tn", name, "/tr", cmdline]
+    hh, mm = f"{sched['hour']:02d}", f"{sched['minute']:02d}"
     if kind == "daily":
-        return base + ["/sc", "DAILY", "/st", st, "/f"]
-    if kind == "weekly":
-        return base + [
-            "/sc",
-            "WEEKLY",
-            "/d",
-            _SCHTASKS_DOW[sched["dow"]],
-            "/st",
-            st,
-            "/f",
-        ]
-    if kind == "monthly":
-        return base + ["/sc", "MONTHLY", "/d", str(sched["dom"]), "/st", st, "/f"]
-    raise ValueError(f"unknown schedule kind: {kind!r}")
+        schedule_el = "<ScheduleByDay>\n        <DaysInterval>1</DaysInterval>\n      </ScheduleByDay>"
+    elif kind == "weekly":
+        day = _DOW_FULL[sched["dow"]]
+        schedule_el = (
+            "<ScheduleByWeek>\n"
+            f"        <DaysOfWeek>\n          <{day} />\n        </DaysOfWeek>\n"
+            "        <WeeksInterval>1</WeeksInterval>\n"
+            "      </ScheduleByWeek>"
+        )
+    elif kind == "monthly":
+        schedule_el = (
+            "<ScheduleByMonth>\n"
+            f"        <DaysOfMonth>\n          <Day>{sched['dom']}</Day>\n        </DaysOfMonth>\n"
+            "      </ScheduleByMonth>"
+        )
+    else:
+        raise ValueError(f"unknown schedule kind: {kind!r}")
+
+    workdir = _expand_tilde(routine.get("workdir", ""), True)
+    exec_blocks: list[str] = []
+    for cmd in resolved_cmds:
+        command, arguments = _split_exe(cmd)
+        lines = [f"      <Command>{escape(command)}</Command>"]
+        if arguments:
+            lines.append(f"      <Arguments>{escape(arguments)}</Arguments>")
+        if workdir:
+            lines.append(
+                f"      <WorkingDirectory>{escape(workdir)}</WorkingDirectory>"
+            )
+        exec_blocks.append("    <Exec>\n" + "\n".join(lines) + "\n    </Exec>")
+    actions = "\n".join(exec_blocks)
+
+    return (
+        '<?xml version="1.0" encoding="UTF-16"?>\n'
+        '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">\n'
+        "  <RegistrationInfo>\n"
+        f"    <Description>{escape(routine.get('description', ''))}</Description>\n"
+        "  </RegistrationInfo>\n"
+        "  <Triggers>\n"
+        "    <CalendarTrigger>\n"
+        f"      <StartBoundary>2026-01-01T{hh}:{mm}:00</StartBoundary>\n"
+        "      <Enabled>true</Enabled>\n"
+        f"      {schedule_el}\n"
+        "    </CalendarTrigger>\n"
+        "  </Triggers>\n"
+        "  <Settings>\n"
+        "    <StartWhenAvailable>true</StartWhenAvailable>\n"
+        "  </Settings>\n"
+        '  <Actions Context="Author">\n'
+        f"{actions}\n"
+        "  </Actions>\n"
+        "</Task>\n"
+    )
 
 
 def _expand_tilde(tok: str, is_windows: bool) -> str:
@@ -313,6 +384,18 @@ def diff_routine(manifest_r: dict, live: dict | None) -> list[str]:
 # --- boundary I/O ---
 
 
+def _which_tool(name: str) -> str | None:
+    if name != "python":
+        return shutil.which(name)
+    # 実行元シェルのvenvに汚染されないシステムPythonを選ぶ
+    entries = os.environ.get("PATH", "").split(os.pathsep)
+
+    def finder(d: str) -> str | None:
+        return shutil.which("python", path=d)
+
+    return pick_system_python(entries, finder, os.environ.get("VIRTUAL_ENV", ""))
+
+
 def _default_toml_path() -> Path:
     return Path(__file__).resolve().parent.parent / "routines.toml"
 
@@ -416,22 +499,35 @@ def cmd_install(args: argparse.Namespace) -> int:
         if not r.get("enabled", True):
             continue
         resolved = [
-            resolve_command(c, r.get("workdir", ""), is_windows, shutil.which)
+            resolve_command(c, r.get("workdir", ""), is_windows, _which_tool)
             for c in r["commands"]
         ]
         if is_windows:
             sched = parse_cron(r["schedule"])
-            if len(resolved) == 1:
-                cmdline = resolved[0]
-            else:
-                cmdline = 'cmd.exe /c "' + " && ".join(resolved) + '"'
-            schtasks_args = to_schtasks_args(r["name"], sched, cmdline)
+            xml = task_xml(r, sched, resolved)
             if args.apply:
-                subprocess.run(schtasks_args, check=True)
+                fd, xml_path = tempfile.mkstemp(suffix=".xml")
+                try:
+                    with os.fdopen(fd, "w", encoding="utf-16") as f:
+                        f.write(xml)
+                    subprocess.run(
+                        [
+                            "schtasks",
+                            "/create",
+                            "/tn",
+                            r["name"],
+                            "/xml",
+                            xml_path,
+                            "/f",
+                        ],
+                        check=True,
+                    )
+                finally:
+                    os.unlink(xml_path)
                 print(f"[APPLIED] {r['name']}")
             else:
                 print(f"[DRY-RUN] {r['name']}")
-                print("  " + " ".join(schtasks_args))
+                print(xml)
         else:
             service, timer = systemd_units(r, resolved)
             base = unit_basename(r["name"])

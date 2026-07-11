@@ -23,6 +23,9 @@ python scripts/routines.py export
 - ツールの絶対パス（dotenvx / uv / python / pwsh）はマニフェストに書かない。実行時に `which` / `Get-Command` で解決する
   （旧: winget の長い絶対パスがタスク定義に直書きされていて移行不能だった）
 - `venv-python` は `<workdir>/.venv` の python（Windows: Scripts\python.exe / Linux: bin/python）
+- `python` は PATH 上の python のうち `.venv` / `VIRTUAL_ENV` 配下を除いた最初のもの（実行元シェルの venv に汚染されない）。
+  `python` で動かすスクリプトは標準ライブラリのみで書く前提。特定のインタプリタが必要なら `venv-python` か明示パスを使う
+- Windows の登録はタスク定義 XML ＋ `schtasks /create /xml`（引数方式では WorkingDirectory・複数アクションを表現できないため）
 - schedule は cron 風 5 フィールドだが対応は daily / weekly / monthly のみ。曜日は 0=日曜
 - 定期タスクの新規追加・変更は CLAUDE.md §12 により承認必須。`check` と dry-run は自由
 - Linux 側 unit は `--out` で出力先変更可（検証用）。タイマーは `Persistent=true`（起動時に取りこぼし実行）

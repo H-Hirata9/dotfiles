@@ -73,68 +73,141 @@ def test_to_oncalendar_monthly():
     )
 
 
-# --- to_schtasks_args ---
+# --- pick_system_python ---
 
 
-def test_to_schtasks_args_daily():
-    result = routines.to_schtasks_args(
-        "Name", {"kind": "daily", "minute": 0, "hour": 8}, "cmd"
-    )
-    assert result == [
-        "schtasks",
-        "/create",
-        "/tn",
-        "Name",
-        "/tr",
-        "cmd",
-        "/sc",
-        "DAILY",
-        "/st",
-        "08:00",
-        "/f",
+def _fake_python_finder(present_dirs: set[str]):
+    def finder(d: str) -> str | None:
+        return d.rstrip("\\/") + "\\python.exe" if d in present_dirs else None
+
+    return finder
+
+
+def test_pick_system_python_skips_venv_entries():
+    entries = [
+        "c:\\users\\nov26\\projects\\life\\telegram_cch_bot\\.venv\\scripts",
+        "c:\\users\\nov26\\appdata\\local\\programs\\python\\python312",
     ]
-
-
-def test_to_schtasks_args_weekly():
-    result = routines.to_schtasks_args(
-        "Name", {"kind": "weekly", "minute": 0, "hour": 9, "dow": 0}, "cmd"
+    result = routines.pick_system_python(entries, _fake_python_finder(set(entries)))
+    assert (
+        result
+        == "c:\\users\\nov26\\appdata\\local\\programs\\python\\python312\\python.exe"
     )
-    assert result == [
-        "schtasks",
-        "/create",
-        "/tn",
-        "Name",
-        "/tr",
-        "cmd",
-        "/sc",
-        "WEEKLY",
-        "/d",
-        "SUN",
-        "/st",
-        "09:00",
-        "/f",
+
+
+def test_pick_system_python_all_venv_raises():
+    entries = [
+        "c:\\proj_a\\.venv\\scripts",
+        "c:\\proj_b\\.venv\\scripts",
     ]
+    with pytest.raises(ValueError):
+        routines.pick_system_python(entries, _fake_python_finder(set(entries)))
 
 
-def test_to_schtasks_args_monthly():
-    result = routines.to_schtasks_args(
-        "Name", {"kind": "monthly", "minute": 0, "hour": 19, "dom": 20}, "cmd"
+def test_pick_system_python_skips_virtual_env_dir():
+    # .venvという名前を含まないvenv（VIRTUAL_ENV配下）も除外される
+    entries = [
+        "c:\\envs\\myenv\\scripts",
+        "c:\\python312",
+    ]
+    result = routines.pick_system_python(
+        entries, _fake_python_finder(set(entries)), virtual_env="c:\\envs\\myenv"
     )
-    assert result == [
-        "schtasks",
-        "/create",
-        "/tn",
-        "Name",
-        "/tr",
-        "cmd",
-        "/sc",
-        "MONTHLY",
-        "/d",
-        "20",
-        "/st",
-        "19:00",
-        "/f",
+    assert result == "c:\\python312\\python.exe"
+
+
+def test_pick_system_python_skips_dirs_without_python():
+    entries = ["c:\\tools", "c:\\python312"]
+    result = routines.pick_system_python(
+        entries, _fake_python_finder({"c:\\python312"})
+    )
+    assert result == "c:\\python312\\python.exe"
+
+
+# --- task_xml ---
+
+
+def _make_routine(schedule: str, workdir: str) -> dict:
+    return {
+        "name": "X",
+        "description": "desc",
+        "schedule": schedule,
+        "commands": [],
+        "workdir": workdir,
+        "enabled": True,
+    }
+
+
+def test_task_xml_roundtrip_daily():
+    routine = _make_routine("0 8 * * *", "C:\\Users\\nov26\\work")
+    sched = routines.parse_cron(routine["schedule"])
+    xml = routines.task_xml(routine, sched, ["C:\\Py\\python.exe triage.py"])
+    live = routines.parse_task_xml(xml)
+    assert live["kind"] == "daily"
+    assert live["hour"] == 8
+    assert live["minute"] == 0
+    assert live["commands"] == ["C:\\Py\\python.exe triage.py"]
+    assert live["workdir"] == "C:\\Users\\nov26\\work"
+
+
+def test_task_xml_roundtrip_weekly():
+    routine = _make_routine("0 18 * * 0", "")
+    sched = routines.parse_cron(routine["schedule"])
+    xml = routines.task_xml(routine, sched, ["C:\\Py\\python.exe audit.py"])
+    live = routines.parse_task_xml(xml)
+    assert live["kind"] == "weekly"
+    assert live["dow"] == 0
+    assert live["hour"] == 18
+    assert live["minute"] == 0
+    assert live["commands"] == ["C:\\Py\\python.exe audit.py"]
+
+
+def test_task_xml_roundtrip_monthly():
+    routine = _make_routine("0 19 20 * *", "")
+    sched = routines.parse_cron(routine["schedule"])
+    xml = routines.task_xml(routine, sched, ["C:\\Py\\python.exe eval.py --write"])
+    live = routines.parse_task_xml(xml)
+    assert live["kind"] == "monthly"
+    assert live["dom"] == 20
+    assert live["hour"] == 19
+    assert live["minute"] == 0
+    assert live["commands"] == ["C:\\Py\\python.exe eval.py --write"]
+
+
+def test_task_xml_multiple_execs_with_workdir():
+    routine = _make_routine(
+        "0 9 * * *", "C:\\Users\\nov26\\projects\\life\\health_sync"
+    )
+    sched = routines.parse_cron(routine["schedule"])
+    cmds = [
+        "C:\\bin\\dotenvx.exe run -- C:\\bin\\uv.exe run python fetch_health.py",
+        "C:\\bin\\dotenvx.exe run -- C:\\bin\\uv.exe run python health_verify.py",
     ]
+    xml = routines.task_xml(routine, sched, cmds)
+    assert xml.count("<Exec>") == 2
+    assert xml.count("<WorkingDirectory>") == 2
+    live = routines.parse_task_xml(xml)
+    assert live["commands"] == cmds
+    assert live["workdir"] == "C:\\Users\\nov26\\projects\\life\\health_sync"
+
+
+def test_task_xml_exe_path_with_spaces():
+    routine = _make_routine("0 18 * * 0", "")
+    sched = routines.parse_cron(routine["schedule"])
+    cmd = "C:\\Program Files\\PowerShell\\7\\pwsh.exe -NoProfile -File a.ps1"
+    xml = routines.task_xml(routine, sched, [cmd])
+    assert "<Command>C:\\Program Files\\PowerShell\\7\\pwsh.exe</Command>" in xml
+    assert "<Arguments>-NoProfile -File a.ps1</Arguments>" in xml
+    live = routines.parse_task_xml(xml)
+    assert live["commands"] == [cmd]
+
+
+def test_task_xml_settings_and_start_boundary():
+    routine = _make_routine("30 9 * * 1", "")
+    sched = routines.parse_cron(routine["schedule"])
+    xml = routines.task_xml(routine, sched, ["C:\\Py\\python.exe x.py"])
+    assert "<StartWhenAvailable>true</StartWhenAvailable>" in xml
+    assert "<StartBoundary>2026-01-01T09:30:00</StartBoundary>" in xml
 
 
 # --- resolve_command ---
