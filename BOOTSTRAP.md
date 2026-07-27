@@ -43,6 +43,9 @@ cd $env:USERPROFILE\dotfiles
 - `codex/AGENTS.md` `gemini/GEMINI.md` を ADA トーンで生成
 - gitleaks を導入し global `core.hooksPath` を設定
 
+> **`settings.json` に `model` キーは置かない**（2026-07-27）。使うモデルは端末ごと・その時々で変わるので、
+> 版管理せず Claude Code の `/model` で指定する。ここに書くと `setup.ps1 -Force` が現在の選択を巻き戻す。
+
 ### 4. データ/知識リポを clone（必要に応じて）
 - `cch-bot-knowledge`（health / ai-news / eval のデータレイク）
 - 各プロジェクト（telegram_cch_bot, nature_remo, health_sync, discord_mybot 等）
